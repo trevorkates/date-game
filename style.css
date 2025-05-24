@@ -8,30 +8,35 @@
   --btn-bg: #0c183f;
   --btn-text: #ffffff;
 }
+
 #date-game {
   font-family: inherit, sans-serif;
   max-width: 600px;
   margin: 1.5em auto;
   padding: 1.5em;
   background: var(--white);
-  border: 1px solid #ddd;
+  /* removed border */
+  border: none;
   border-radius: 8px;
   text-align: center;
 }
+
 #date-display {
   font-size: 2em;
   margin: 0.75em 0;
   color: var(--navy);
 }
+
 #timer {
   font-size: 1.5em;
   margin-bottom: 0.75em;
   color: var(--gold);
 }
+
 .day-btn {
-  margin: 0.3em;
-  padding: 0.6em 1em;
-  font-size: 1.1em;
+  margin: 0.4em;
+  padding: 0.8em 1.5em;    /* bigger buttons */
+  font-size: 1.2em;        /* larger text */
   background: var(--btn-bg);
   color: var(--btn-text);
   border: 1px solid var(--gold);
@@ -39,14 +44,14 @@
   cursor: pointer;
 }
 .day-btn:disabled { opacity: 0.6; cursor: default; }
-.day-btn.correct  { background: var(--green);   color: var(--white);   border-color: var(--green); }
-.day-btn.wrong    { background: var(--red);     color: var(--white);   border-color: var(--red); }
-.day-btn.expected { background: var(--highlight);color: var(--navy);    border-color: var(--highlight); }
+.day-btn.correct   { background: var(--green);    color: var(--white); border-color: var(--green); }
+.day-btn.wrong     { background: var(--red);      color: var(--white); border-color: var(--red); }
+.day-btn.expected  { background: var(--highlight); color: var(--navy);  border-color: var(--highlight); }
 
 #controls button {
   margin: 0.6em 0.4em;
-  padding: 0.5em 1em;
-  font-size: 1em;
+  padding: 0.8em 1.5em;    /* bigger buttons */
+  font-size: 1.2em;
   background: var(--gold);
   color: var(--navy);
   border: none;
