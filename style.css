@@ -13,10 +13,10 @@
   font-family: inherit, sans-serif;
   max-width: 600px;
   margin: 1.5em auto;
-  padding: 1.5em;
+  padding: 2em;               /* a bit more breathing room */
   background: var(--white);
-  /* removed border */
-  border: none;
+  border: none;               /* no border */
+  box-shadow: none;           /* remove any shadow/outline */
   border-radius: 8px;
   text-align: center;
 }
@@ -34,9 +34,9 @@
 }
 
 .day-btn {
-  margin: 0.4em;
-  padding: 0.8em 1.5em;    /* bigger buttons */
-  font-size: 1.2em;        /* larger text */
+  margin: 0.5em;
+  padding: 1em 2em;           /* larger buttons */
+  font-size: 1.3em;           /* bigger text */
   background: var(--btn-bg);
   color: var(--btn-text);
   border: 1px solid var(--gold);
@@ -49,9 +49,9 @@
 .day-btn.expected  { background: var(--highlight); color: var(--navy);  border-color: var(--highlight); }
 
 #controls button {
-  margin: 0.6em 0.4em;
-  padding: 0.8em 1.5em;    /* bigger buttons */
-  font-size: 1.2em;
+  margin: 0.6em 0.5em;
+  padding: 1em 2em;           /* match day-btn sizing */
+  font-size: 1.3em;
   background: var(--gold);
   color: var(--navy);
   border: none;
