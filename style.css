@@ -13,44 +13,59 @@
   font-family: inherit, sans-serif;
   max-width: 600px;
   margin: 1.5em auto;
-  padding: 2em;               /* a bit more breathing room */
+  padding: 2em;
   background: var(--white);
-  border: none;               /* no border */
-  box-shadow: none;           /* remove any shadow/outline */
+  border: none;
+  box-shadow: none;
   border-radius: 8px;
   text-align: center;
 }
 
 #date-display {
-  font-size: 2em;
+  font-size: 3em;      /* much larger date */
   margin: 0.75em 0;
   color: var(--navy);
 }
 
 #timer {
-  font-size: 1.5em;
+  font-size: 2em;      /* bigger timer */
   margin-bottom: 0.75em;
   color: var(--gold);
 }
 
 .day-btn {
   margin: 0.5em;
-  padding: 1em 2em;           /* larger buttons */
-  font-size: 1.3em;           /* bigger text */
+  padding: 1em 2em;    /* larger buttons */
+  font-size: 1.3em;    /* bigger text */
   background: var(--btn-bg);
   color: var(--btn-text);
   border: 1px solid var(--gold);
   border-radius: 4px;
   cursor: pointer;
 }
-.day-btn:disabled { opacity: 0.6; cursor: default; }
-.day-btn.correct   { background: var(--green);    color: var(--white); border-color: var(--green); }
-.day-btn.wrong     { background: var(--red);      color: var(--white); border-color: var(--red); }
-.day-btn.expected  { background: var(--highlight); color: var(--navy);  border-color: var(--highlight); }
+.day-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.day-btn.correct {
+  background: var(--green);
+  color: var(--white);
+  border-color: var(--green);
+}
+.day-btn.wrong {
+  background: var(--red);
+  color: var(--white);
+  border-color: var(--red);
+}
+.day-btn.expected {
+  background: var(--highlight);
+  color: var(--navy);
+  border-color: var(--highlight);
+}
 
 #controls button {
   margin: 0.6em 0.5em;
-  padding: 1em 2em;           /* match day-btn sizing */
+  padding: 1em 2em;    /* match day-btn sizing */
   font-size: 1.3em;
   background: var(--gold);
   color: var(--navy);
@@ -58,13 +73,23 @@
   border-radius: 4px;
   cursor: pointer;
 }
-#controls button:hover { opacity: 0.9; }
+#controls button:hover {
+  opacity: 0.9;
+}
 
-#scoreboard, #metrics {
+#scoreboard,
+#metrics {
   margin-top: 1em;
-  font-size: 1.1em;
+  font-size: 1.3em;    /* bump up the stats text */
   color: var(--navy);
 }
-#scoreboard span, #metrics span { font-weight: bold; }
-#correct-count { color: var(--green); }
-#wrong-count   { color: var(--red);   }
+#scoreboard span,
+#metrics span {
+  font-weight: bold;
+}
+#correct-count {
+  color: var(--green);
+}
+#wrong-count {
+  color: var(--red);
+}
