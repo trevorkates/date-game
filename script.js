@@ -1,11 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Loaded updated script.js v2');  // <-- verify this appears in your console
+  console.log('Loaded updated script.js v3 (with dates)');
 
   const daysOrdered = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   let startTime, timerInterval, currentAnswer;
-  let score = { correct:0, wrong:0, streak:0 },
-      solveTimes = [],
-      streakTimes = [];
+  let score = { correct:0, wrong:0, streak:0 }, solveTimes = [], streakTimes = [];
 
   // DOM refs
   const dateDisplay    = document.getElementById('date-display'),
@@ -31,18 +29,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     return snap.empty ? 0 : snap.docs[0].data().streak;
   }
   async function saveStreak(name, streak, avgTime) {
-    console.log('Saving to Firestore:', { name, streak, avgTime });
-    await streaksRef.add({ name, streak, avgTime, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    console.log('Saving record:', { name, streak, avgTime });
+    await streaksRef.add({
+      name,
+      streak,
+      avgTime,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
   }
   async function loadLeaderboardData() {
     const snap = await streaksRef.orderBy('streak','desc').limit(10).get();
     return snap.docs.map(doc => {
       const d = doc.data();
-      return { name: d.name, streak: d.streak, avgTime: d.avgTime || '--:--.--' };
+      // convert Firestore Timestamp → JS Date → locale string
+      let dateSet = '--';
+      if (d.timestamp && d.timestamp.toDate) {
+        dateSet = d.timestamp.toDate().toLocaleDateString('en-US', {
+          year: 'numeric', month: 'long', day: 'numeric'
+        });
+      }
+      return {
+        name: d.name,
+        streak: d.streak,
+        avgTime: d.avgTime || '--:--.--',
+        dateSet
+      };
     });
   }
 
-  // Timer & date
+  // date & timer functions
   function pickRandomDate() {
     if (Math.random() < 0.85) {
       const a = new Date(1970,0,1).getTime(), b = Date.now();
@@ -68,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   function stopTimer() { clearInterval(timerInterval); }
 
-  // UI renderers
+  // render buttons & metrics
   function renderButtons() {
     buttonsDiv.innerHTML = '';
     daysOrdered.forEach(day => {
@@ -89,12 +104,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     avgTimeEl.textContent  = formatTime(avg);
   }
 
-  // Game logic
+  // handle guessing logic
   async function handleGuess(btn, day) {
     stopTimer();
     const elapsed = Date.now() - startTime;
     updateMetrics(elapsed);
-    document.querySelectorAll('.day-btn').forEach(b => b.disabled = true);
+    document.querySelectorAll('.day-btn').forEach(b=>b.disabled=true);
 
     if (day === currentAnswer) {
       btn.classList.add('correct');
@@ -104,18 +119,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       streakTimes.push(elapsed);
 
     } else {
-      // Streak ended → only now prompt & save if you beat the old record
+      // streak ended
       const finalStreak = score.streak,
             prevMax     = await getHighScore();
 
       if (finalStreak > prevMax) {
-        const sumStreak = streakTimes.reduce((a,b)=>a+b,0),
-              avgStreak = sumStreak / streakTimes.length,
-              avgStr    = formatTime(avgStreak);
+        // compute average of this streak
+        const sumStreak = streakTimes.reduce((a,b)=>a+b,0);
+        const avgStreak = sumStreak / streakTimes.length;
+        const avgStr    = formatTime(avgStreak);
 
         const name = prompt(
           `🎉 New record! Streak: ${finalStreak}\n` +
-          `Avg time: ${avgStr}\nEnter your name:`
+          `Average time: ${avgStr}\nEnter your name:`
         );
         if (name) await saveStreak(name.trim(), finalStreak, avgStr);
       }
@@ -137,9 +153,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     nextBtn.style.display  = 'inline-block';
   }
 
+  // start new round
   function newRound() {
     dateDisplay.classList.remove('correct','wrong');
-    buttonsDiv.innerHTML  = '';
+    buttonsDiv.innerHTML = '';
     nextBtn.style.display  = 'none';
     startBtn.style.display = 'none';
 
@@ -147,6 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           jsDay = d.getDay(),
           idx   = jsDay === 0 ? 6 : jsDay - 1;
     currentAnswer = daysOrdered[idx];
+
     dateDisplay.textContent = d.toLocaleDateString('en-US',{
       year:'numeric', month:'long', day:'numeric'
     });
@@ -155,24 +173,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     startTimer();
   }
 
-  // Leaderboard modal
+  // leaderboard modal
   leaderboardBtn.onclick = async () => {
     const entries = await loadLeaderboardData();
     lbList.innerHTML = '';
     entries.forEach(e => {
       const li = document.createElement('li');
-      li.innerHTML = `<strong>${e.name}</strong> – Streak: ${e.streak}, Avg: ${e.avgTime}`;
+      li.innerHTML = `<strong>${e.name}</strong> – Streak: ${e.streak}, Avg: ${e.avgTime}, ${e.dateSet}`;
       lbList.appendChild(li);
     });
     lbModal.classList.remove('hidden');
   };
   closeLbBtn.onclick = () => lbModal.classList.add('hidden');
 
-  // Wire Start/Next
+  // wire buttons
   startBtn.onclick = newRound;
   nextBtn.onclick  = newRound;
 
-  // Initial UI state
+  // initial UI
   nextBtn.style.display  = 'none';
   startBtn.style.display = 'inline-block';
   lbModal.classList.add('hidden');
