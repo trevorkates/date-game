@@ -23,23 +23,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Firestore helpers
   async function getHighScore() {
-    const snap = await streaksRef.orderBy('streak','desc').limit(1).get();
+    const snap = await streaksRef.orderBy('streak', 'desc').limit(1).get();
     return snap.empty ? 0 : snap.docs[0].data().streak;
   }
   async function saveStreak(name, streak, avgTime) {
-    // avgTime is a string like "00:05.23"
-    await streaksRef.add({ name: name.trim(), streak, avgTime, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    // avgTime is a formatted string, e.g. "00:05.23"
+    await streaksRef.add({
+      name: name.trim(),
+      streak: streak,
+      avgTime: avgTime,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
   }
   async function loadLeaderboardData() {
-    const snap = await streaksRef.orderBy('streak','desc').limit(10).get();
-    // extract only the fields we care about
+    const snap = await streaksRef.orderBy('streak', 'desc').limit(10).get();
     return snap.docs.map(doc => {
-      const { name, streak, avgTime } = doc.data();
-      return { name, streak, avgTime };
+      const data = doc.data();
+      return {
+        name: data.name,
+        streak: data.streak,
+        avgTime: data.avgTime || '--:--.--'
+      };
     });
   }
 
-  // date & timer
+  // date and timer helpers
   function pickRandomDate() {
     if (Math.random() < 0.85) {
       const a = new Date(1970,0,1).getTime(), b = Date.now();
@@ -50,9 +58,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   function formatTime(ms) {
-    const m = Math.floor(ms/60000),
-          s = Math.floor((ms%60000)/1000),
-          h = Math.floor((ms%1000)/10);
+    const m = Math.floor(ms / 60000),
+          s = Math.floor((ms % 60000) / 1000),
+          h = Math.floor((ms % 1000) / 10);
     return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(h).padStart(2,'0')}`;
   }
   function startTimer() {
@@ -63,7 +71,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       timerEl.textContent = formatTime(Date.now() - startTime);
     }, 30);
   }
-  function stopTimer() { clearInterval(timerInterval); }
+  function stopTimer() {
+    clearInterval(timerInterval);
+  }
 
   // UI rendering
   function renderButtons() {
@@ -80,18 +90,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   function updateMetrics(elapsed) {
     solveTimes.push(elapsed);
     const best = Math.min(...solveTimes),
-          sum  = solveTimes.reduce((a,b)=>a+b,0),
-          avg  = sum/solveTimes.length;
+          sum  = solveTimes.reduce((a,b) => a + b, 0),
+          avg  = sum / solveTimes.length;
     bestTimeEl.textContent = formatTime(best);
     avgTimeEl.textContent  = formatTime(avg);
   }
 
-  // handle each guess
+  // guess handling
   async function handleGuess(btn, day) {
     stopTimer();
     const elapsed = Date.now() - startTime;
     updateMetrics(elapsed);
-
     document.querySelectorAll('.day-btn').forEach(b => b.disabled = true);
 
     if (day === currentAnswer) {
@@ -103,20 +112,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       streakTimes.push(elapsed);
 
     } else {
-      // wrong → streak ends, check for record
+      // wrong → streak ends, check if it was a new record
       const finalStreak = score.streak;
       const prevMax     = await getHighScore();
       if (finalStreak > prevMax) {
-        // compute average over only the correct-answer times
-        const sumCorrect = streakTimes.reduce((a,b)=>a+b,0);
-        const avgCorrect = sumCorrect / streakTimes.length;
-        const avgStr     = formatTime(avgCorrect);
+        // compute average of just the correct-answer times
+        const sumStreak = streakTimes.reduce((a,b) => a + b, 0);
+        const avgStreak = sumStreak / streakTimes.length;
+        const avgStr    = formatTime(avgStreak);
 
         const name = prompt(
           `🎉 New record! You hit a streak of ${finalStreak}.\n` +
-          `Your average time was ${avgStr}.\nEnter your name:`
+          `Your average time for that streak was ${avgStr}.\nEnter your name:`
         );
-        if (name) await saveStreak(name, finalStreak, avgStr);
+        if (name) {
+          await saveStreak(name, finalStreak, avgStr);
+        }
       }
 
       btn.classList.add('wrong');
@@ -125,19 +136,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       score.streak = 0;
       streakTimes = [];
 
+      // highlight the correct day
       document.querySelectorAll('.day-btn').forEach(b => {
-        if (b.textContent === currentAnswer) b.classList.add('expected');
+        if (b.textContent === currentAnswer) {
+          b.classList.add('expected');
+        }
       });
     }
 
-    // update scoreboard & show Next
+    // update display & show Next
     correctEl.textContent = score.correct;
     wrongEl.textContent   = score.wrong;
     streakEl.textContent  = score.streak;
     nextBtn.style.display  = 'inline-block';
   }
 
-  // next round
+  // start a new round
   function newRound() {
     dateDisplay.classList.remove('correct','wrong');
     buttonsDiv.innerHTML = '';
@@ -149,14 +163,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           idx   = jsDay === 0 ? 6 : jsDay - 1;
     currentAnswer = daysOrdered[idx];
     dateDisplay.textContent = d.toLocaleDateString('en-US', {
-      year:'numeric', month:'long', day:'numeric'
+      year: 'numeric', month: 'long', day: 'numeric'
     });
 
     renderButtons();
     startTimer();
   }
 
-  // leaderboard popup
+  // leaderboard modal logic
   leaderboardBtn.onclick = async () => {
     const entries = await loadLeaderboardData();
     lbList.innerHTML = '';
@@ -167,13 +181,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     lbModal.classList.remove('hidden');
   };
-  closeLbBtn.onclick = () => lbModal.classList.add('hidden');
+  closeLbBtn.onclick = () => {
+    lbModal.classList.add('hidden');
+  };
 
-  // wire Start/Next
+  // wire Start & Next buttons
   startBtn.onclick = newRound;
   nextBtn.onclick  = newRound;
 
-  // initial UI
+  // initial UI state
   nextBtn.style.display  = 'none';
   startBtn.style.display = 'inline-block';
   lbModal.classList.add('hidden');
