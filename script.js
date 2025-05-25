@@ -1,11 +1,13 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Loaded script.js v4 (with “Why?” explanation)');
+  console.log('Loaded script.js v5 (enhanced explanation)');
 
-  // show intro popup
   alert("Guess the day of the week for the randomly generated date!");
 
   const daysOrdered = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  let currentDate, score = { correct:0, wrong:0, streak:0 }, solveTimes = [], streakTimes = [];
+  let currentDate, lastGuess;
+  let score = { correct:0, wrong:0, streak:0 },
+      solveTimes = [],
+      streakTimes = [];
 
   // DOM refs
   const dateDisplay    = document.getElementById('date-display'),
@@ -20,17 +22,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         streakEl       = document.getElementById('streak-count'),
         bestTimeEl     = document.getElementById('best-time'),
         avgTimeEl      = document.getElementById('avg-time'),
-        lbModal        = document.getElementById('leaderboard-modal'),
-        lbList         = document.getElementById('leaderboard-list'),
-        closeLbBtn     = document.getElementById('close-leaderboard'),
         whyModal       = document.getElementById('why-modal'),
         whyContent     = document.getElementById('why-content'),
-        closeWhyBtn    = document.getElementById('close-why');
+        closeWhyBtn    = document.getElementById('close-why'),
+        lbModal        = document.getElementById('leaderboard-modal'),
+        lbList         = document.getElementById('leaderboard-list'),
+        closeLbBtn     = document.getElementById('close-leaderboard');
 
   const streaksRef = db.collection('streaks');
   let timerInterval, startTime;
 
-  // Firestore helpers
+  // Firestore helpers (unchanged) …
   async function getHighScore() {
     const snap = await streaksRef.orderBy('streak','desc').limit(1).get();
     return snap.empty ? 0 : snap.docs[0].data().streak;
@@ -48,16 +50,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     return snap.docs.map(doc => {
       const d = doc.data();
       let dateSet = '--';
-      if (d.timestamp && d.timestamp.toDate) {
+      if (d.timestamp?.toDate) {
         dateSet = d.timestamp.toDate().toLocaleDateString('en-US', {
           year:'numeric', month:'long', day:'numeric'
         });
       }
-      return { name:d.name, streak:d.streak, avgTime:d.avgTime||'--:--.--', dateSet };
+      return {
+        name: d.name,
+        streak: d.streak,
+        avgTime: d.avgTime || '--:--.--',
+        dateSet
+      };
     });
   }
 
-  // date/timer utils
+  // date + timer util (unchanged) …
   function pickRandomDate() {
     const p = Math.random() < 0.85;
     const start = p ? new Date(1970,0,1) : new Date(1900,0,1);
@@ -78,24 +85,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       timerEl.textContent = formatTime(Date.now() - startTime);
     }, 30);
   }
-  function stopTimer() {
-    clearInterval(timerInterval);
-  }
+  function stopTimer() { clearInterval(timerInterval); }
 
-  // render buttons
+  // UI renderers (unchanged) …
   function renderButtons() {
     buttonsDiv.innerHTML = '';
-    // Monday-first? original code used Monday-first; user code stored daysOrdered Sunday-first,
-    // but currentAnswer is JavaScript Date.getDay(), so keep Sunday-first array.
-    ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
-      .forEach(day => {
-        const btn = document.createElement('button');
-        btn.textContent = day;
-        btn.className   = 'day-btn';
-        btn.disabled    = false;
-        btn.onclick     = () => handleGuess(btn, day);
-        buttonsDiv.appendChild(btn);
-      });
+    daysOrdered.forEach(day => {
+      const btn = document.createElement('button');
+      btn.textContent = day;
+      btn.className   = 'day-btn';
+      btn.disabled    = false;
+      btn.onclick     = () => handleGuess(btn, day);
+      buttonsDiv.appendChild(btn);
+    });
   }
   function updateMetrics(elapsed) {
     solveTimes.push(elapsed);
@@ -106,60 +108,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     avgTimeEl.textContent  = formatTime(avg);
   }
 
-  // Odd+11 year-code
-  function computeYearCode(year) {
-    let y = year % 100;
-    if (y % 2) y += 11;
-    y /= 2;
-    if (y % 2) y += 11;
-    return y % 7;
+  // Century & month codes
+  function centuryCode(year) {
+    const table = {17:0,18:5,19:3,20:2};
+    return table[Math.floor(year/100)] ?? 0;
   }
-  function monthCode(month, year) {
-    const leap = (year%4===0 && year%100!==0) || (year%400===0);
-    const map  = {1: leap?6:0, 2: leap?2:3, 3:3,4:6,5:1,6:4,7:6,8:2,9:5,10:0,11:3,12:5};
+  function monthCode(month) {
+    // Jan=1…Dec=12
+    const map = {1:0,2:3,3:3,4:6,5:1,6:4,7:6,8:2,9:5,10:0,11:3,12:5};
     return map[month];
   }
-  function centuryCode(year) {
-    const c = Math.floor(year/100) % 4;
-    return (6 - 2*c + 7) % 7;
+  function yearCode(y) {
+    // odd+11 method on last two digits
+    let a = y % 100;
+    let steps = [];
+    steps.push(`${a} (last two digits)`);
+    if (a %2) { a+=11; steps.push(`<span style="color:var(--highlight)">was odd → +11 = ${a}</span>`); }
+    a = a/2;
+    steps.push(`${a} (÷2)`);
+    if (a %2) { a+=11; steps.push(`<span style="color:var(--highlight)">was odd → +11 = ${a}</span>`); }
+    return { code: a %7, steps };
   }
 
-  // explanation builder
-  function buildExplanation(d) {
-    const D = d.getDate(),
+  // Build the teaching explanation
+  function buildExplanation(d, userGuess) {
+    const Y = d.getFullYear(),
           M = d.getMonth()+1,
-          Y = d.getFullYear(),
-          YC1 = Y % 100;
-    // steps
-    let step1 = YC1, desc1 = `${step1} (last two digits)`;
-    if (step1%2) { step1 +=11; desc1 = `<span style="color:var(--highlight)">${YC1} is odd → +11 = ${step1}</span>`; }
-    let step2 = step1/2,
-        desc2 = `${step2} (divide by 2)`;
-    if (step2%2) { step2 +=11; desc2 = `<span style="color:var(--highlight)">${step1} is odd → +11 = ${step2}</span>`; }
-    const yearCode = step2 % 7;
-    const cCode    = centuryCode(Y),
-          mCode    = monthCode(M,Y),
-          total    = D + cCode + mCode + yearCode,
-          dowIndex = total % 7,
-          dowName  = daysOrdered[dowIndex];
+          D = d.getDate();
+
+    // 1) year code
+    const yc = yearCode(Y);
+    // 2) century code
+    const cc = centuryCode(Y);
+    // 3) month code
+    const mc = monthCode(M);
+    // total & weekday
+    const total = yc.code + cc + mc + D,
+          wdIdx = total %7,
+          correct = daysOrdered[wdIdx];
+
+    // anchor demonstration (doomsday)
+    const anchorDay = M===2 && ((Y%4===0&&Y%100!==0)||(Y%400===0)) ? 29 : // Feb leap
+                      [4,6,8,10,12].includes(M) ? M :  // even months: 4/4,6/6,8/8,...
+                      M-1;                              // odd months pick previous even
+    const diff = D - anchorDay; // simple difference
+    const anchorWeekdayIdx = (total - D + anchorDay) %7;
+    const anchorWeekday = daysOrdered[anchorWeekdayIdx];
 
     return `
-      <p>For <strong>${d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</strong>:</p>
-      <ul style="list-style:none;padding:0;">
-        <li>1) <strong>Century code</strong> for ${Y}: ${cCode}</li>
-        <li>2) <strong>Month code</strong> for ${d.toLocaleString('en-US',{month:'long'})}: ${mCode}</li>
-        <li>3) <strong>Day</strong>: ${D}</li>
-        <li>4) <strong>Year code</strong> via odd+11 method:
-          <ul>
-            <li>${desc1}</li>
-            <li>${desc2}</li>
-            <li>→ <span style="color:var(--navy)">${step2} mod 7 = ${yearCode}</span></li>
-          </ul>
-        </li>
-        <li>5) Sum: ${D} + ${cCode} + ${mCode} + ${yearCode} = ${total}</li>
-        <li>6) Mod 7: ${total} mod 7 = ${dowIndex} → <strong>${dowName}</strong></li>
-      </ul>
-      <p>Your answer was <strong style="color:var(--red)">${currentAnswer}</strong>, correct is <strong style="color:var(--green)">${dowName}</strong>.</p>
+      <p><strong>Overview:</strong> First compute your <em>year code</em> via odd+11, then add the <em>century code</em> (1700→0, 1800→5, 1900→3, 2000→2), then add the <em>month code</em>, and finally add the <em>day of the month</em>.  Modulo 7 gives you the weekday.</p>
+      <ol style="text-align:left">
+        <li><strong>Year code</strong> for ${Y}:<br>${yc.steps.join('<br>')}<br>&rarr; <em>Year code</em> = ${yc.code}</li>
+        <li><strong>Century code</strong> for ${Y}: = ${cc}</li>
+        <li><strong>Month code</strong> for ${d.toLocaleString('en-US',{month:'long'})}: = ${mc}</li>
+        <li><strong>Day</strong>: ${D}</li>
+        <li><strong>Total</strong>: ${yc.code} + ${cc} + ${mc} + ${D} = ${total}</li>
+        <li><strong>Total mod 7</strong>: ${total} mod 7 = ${wdIdx} → <em>${correct}</em></li>
+      </ol>
+      <p><strong>Anchor‐day method:</strong> each even month has a “doomsday” date (e.g. 4/4, 6/6, 8/8…), and in leap years Feb 29 is the anchor.  That date always falls on the same weekday as your computed weekday.  Here, the anchor is <strong>${M}/${anchorDay}</strong> which is <strong>${anchorWeekday}</strong>.  Your target day ${M}/${D} is ${diff>0?diff+' day'+(diff>1?'s':'')+' after':''+Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'')+' before'} → <strong>${correct}</strong>.</p>
+      <p>Your answer was <strong style="color:var(--red)">${userGuess}</strong>, correct is <strong style="color:var(--green)">${correct}</strong>.</p>
     `;
   }
 
@@ -170,36 +177,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateMetrics(elapsed);
     document.querySelectorAll('.day-btn').forEach(b=>b.disabled=true);
 
-    if (day === currentAnswer) {
+    lastGuess = day;  // store for explanation
+
+    if (day === daysOrdered[currentDate.getDay()]) {
+      // correct
       btn.classList.add('correct');
       dateDisplay.classList.add('correct');
-      score.correct++;
-      score.streak++;
+      score.correct++; score.streak++;
       streakTimes.push(elapsed);
 
     } else {
-      // end streak & prompt if record
+      // wrong
+      btn.classList.add('wrong');
+      dateDisplay.classList.add('wrong');
+      score.wrong++;
+
+      // show Why? button
+      whyBtn.style.display = 'inline-block';
+
+      // check record end (unchanged) …
       const finalStreak = score.streak,
             prevMax     = await getHighScore();
       if (finalStreak > prevMax) {
         const sumSt = streakTimes.reduce((a,b)=>a+b,0),
-              avgSt = sumSt / streakTimes.length,
-              avgStr= formatTime(avgSt);
+              avgStr = formatTime(sumSt / streakTimes.length);
         const name = prompt(`🎉 New record! Streak: ${finalStreak}\nAvg time: ${avgStr}\nEnter your name:`);
         if (name) await saveStreak(name.trim(), finalStreak, avgStr);
       }
+      score.streak = 0;
+      streakTimes = [];
 
-      btn.classList.add('wrong');
-      dateDisplay.classList.add('wrong');
-      score.wrong++;
-      score.streak=0;
-      streakTimes=[];
-
-      // highlight correct, show Why?
+      // highlight correct
       document.querySelectorAll('.day-btn').forEach(b=>{
-        if (b.textContent===currentAnswer) b.classList.add('expected');
+        if (b.textContent === daysOrdered[currentDate.getDay()]) {
+          b.classList.add('expected');
+        }
       });
-      whyBtn.style.display = 'inline-block';
     }
 
     correctEl.textContent = score.correct;
@@ -208,49 +221,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     nextBtn.style.display  = 'inline-block';
   }
 
-  // new round
+  // New round
   function newRound() {
     dateDisplay.classList.remove('correct','wrong');
-    buttonsDiv.innerHTML='';
+    buttonsDiv.innerHTML = '';
     whyBtn.style.display   = 'none';
     nextBtn.style.display  = 'none';
     startBtn.style.display = 'none';
 
     currentDate = pickRandomDate();
-    currentAnswer = daysOrdered[currentDate.getDay()];
-    dateDisplay.textContent = currentDate.toLocaleDateString('en-US', {
-      year:'numeric', month:'long', day:'numeric'
-    });
+    dateDisplay.textContent = currentDate.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
 
     renderButtons();
     startTimer();
   }
 
-  // show leaderboard
+  // Why? explanation popup
+  whyBtn.onclick = () => {
+    whyContent.innerHTML = buildExplanation(currentDate, lastGuess);
+    whyModal.classList.remove('hidden');
+  };
+  closeWhyBtn.onclick = () => whyModal.classList.add('hidden');
+
+  // Leaderboard popup
   leaderboardBtn.onclick = async () => {
     const entries = await loadLeaderboardData();
-    lbList.innerHTML='';
-    entries.forEach(e=>{
+    lbList.innerHTML = '';
+    entries.forEach(e => {
       const li = document.createElement('li');
       li.innerHTML = `<strong>${e.name}</strong> – Streak: ${e.streak}, Avg: ${e.avgTime}, Date: ${e.dateSet}`;
       lbList.appendChild(li);
     });
     lbModal.classList.remove('hidden');
   };
-  closeLbBtn.onclick = ()=> lbModal.classList.add('hidden');
+  closeLbBtn.onclick = () => lbModal.classList.add('hidden');
 
-  // show explanation
-  whyBtn.onclick = () => {
-    whyContent.innerHTML = buildExplanation(currentDate);
-    whyModal.classList.remove('hidden');
-  };
-  closeWhyBtn.onclick = () => whyModal.classList.add('hidden');
-
-  // wire Start/Next
+  // Wire Start/Next
   startBtn.onclick = newRound;
   nextBtn.onclick  = newRound;
 
-  // initial UI
+  // Initial state
   nextBtn.style.display  = 'none';
   startBtn.style.display = 'inline-block';
   lbModal.classList.add('hidden');
