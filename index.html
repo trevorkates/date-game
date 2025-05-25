@@ -5,11 +5,11 @@
   <title>Date Game</title>
   <link rel="stylesheet" href="style.css">
 
-  <!-- FIREBASE COMPAT SDKs via CDN -->
+  <!-- FIREBASE COMPAT SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-  <!-- YOUR FIREBASE CONFIG -->
+  <!-- FIREBASE CONFIG -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDh3UO7iKqWZ_9QtnJMJvNmGdjpNXV6Llo",
@@ -34,6 +34,8 @@
       <button id="start-btn">Start</button>
       <button id="next-btn" style="display:none;">Next</button>
       <button id="leaderboard-btn">Leaderboard</button>
+      <!-- new "Why?" button, hidden until wrong answer -->
+      <button id="why-btn" style="display:none;">Why?</button>
     </div>
 
     <div id="scoreboard">
@@ -47,16 +49,25 @@
     </div>
   </div>
 
-  <!-- Leaderboard modal -->
+  <!-- Leaderboard modal (existing) -->
   <div id="leaderboard-modal" class="modal hidden">
     <div class="modal-content">
-      <h2>All-Time Leaderboard</h2>
+      <h2>All-Time Streak Leaderboard</h2>
       <ol id="leaderboard-list"></ol>
       <button id="close-leaderboard">Close</button>
     </div>
   </div>
 
-  <!-- load script after the DOM above -->
-  <script src="script.js?v=3"></script>
+  <!-- Explanation modal -->
+  <div id="why-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>How to calculate the day of the week</h2>
+      <div id="why-content" style="text-align:left; line-height:1.4"></div>
+      <button id="close-why">Close</button>
+    </div>
+  </div>
+
+  <!-- load updated script -->
+  <script src="script.js?v=4"></script>
 </body>
 </html>
