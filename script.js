@@ -112,20 +112,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     const A={1:leap?4:3,2:14,3:14,4:4,5:9,6:6,7:4,8:8,9:5,10:10,11:7,12:12};
     return A[m];
   }
-  function computeYearCode(year){
-    let y=year%100, steps=[`<span style="color:var(--navy)">${y}</span> (last two digits)`];
-    while(y>7){
-      if(y%2!==0){
-        steps.push(`<span style="color:var(--highlight)">${y} is odd → +11 = ${y+11}</span>`);
-        y+=11;
-      }
-      steps.push(`<span style="color:var(--gold)">${y} ÷ 2 = ${Math.floor(y/2)}</span>`);
-      y=Math.floor(y/2);
-    }
-    const code=y%7;
-    steps.push(`<span style="color:var(--green)">Final y = ${y} → Year code = ${code}</span>`);
-    return { code, steps };
+ // Replace your old computeYearCode with this:
+
+function computeYearCode(year) {
+  let y = year % 100;
+  const steps = [
+    `<span style="color:var(--navy)">${y}</span> (last two digits)`
+  ];
+
+  // Step 1: if odd, +11
+  if (y % 2 !== 0) {
+    steps.push(
+      `<span style="color:var(--highlight)">${y} is odd → +11 = ${y + 11}</span>`
+    );
+    y += 11;
   }
+
+  // Step 2: divide by 2
+  steps.push(
+    `<span style="color:var(--gold)">${y} ÷ 2 = ${y / 2}</span>`
+  );
+  y /= 2;
+
+  // Step 3: if still odd, +11
+  if (y % 2 !== 0) {
+    steps.push(
+      `<span style="color:var(--highlight)">${y} is odd → +11 = ${y + 11}</span>`
+    );
+    y += 11;
+  }
+
+  // Now take remainder mod 7
+  const rem = y % 7;
+  steps.push(
+    `<span style="color:var(--green)">${y} mod 7 = ${rem}</span>`
+  );
+
+  // Finally 7’s-complement gives the doomsyear
+  const code = (7 - rem) % 7;
+  steps.push(
+    `<span style="color:var(--navy)">7 − ${rem} = ${code}</span>`
+  );
+
+  return { code, steps };
+}
 
   // Build explanation
   function buildExplanation(d, guess){
