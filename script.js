@@ -1,15 +1,19 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Loaded script.js v8 (fixed loops & color coding)');
+  console.log('Loaded script.js v9');
 
-  // Intro
+  // Intro popup
   alert("Guess the day of the week for the randomly generated date!");
 
+  // Day names
   const daysOrdered = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  // State
   let currentDate, lastGuess;
-  let score = { correct:0, wrong:0, streak:0 }, solveTimes = [], streakTimes = [];
+  let score = { correct: 0, wrong: 0, streak: 0 };
+  let solveTimes = [], streakTimes = [];
   let timerInterval, startTime;
 
-  // DOM
+  // DOM refs
   const dateDisplay    = document.getElementById('date-display'),
         timerEl        = document.getElementById('timer'),
         buttonsDiv     = document.getElementById('buttons'),
@@ -29,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         lbList         = document.getElementById('leaderboard-list'),
         closeLbBtn     = document.getElementById('close-leaderboard');
 
+  // Firestore collection
   const streaksRef = db.collection('streaks');
 
   // Firestore helpers
@@ -36,9 +41,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const snap = await streaksRef.orderBy('streak','desc').limit(1).get();
     return snap.empty ? 0 : snap.docs[0].data().streak;
   }
-  async function saveStreak(name,streak,avgTime) {
+  async function saveStreak(name, streak, avgTime) {
     await streaksRef.add({
-      name, streak, avgTime,
+      name,
+      streak,
+      avgTime,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
   }
@@ -49,24 +56,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       let dateSet = '--';
       if (d.timestamp?.toDate) {
         dateSet = d.timestamp.toDate().toLocaleDateString('en-US',{
-          year:'numeric',month:'long',day:'numeric'
+          year:'numeric', month:'long', day:'numeric'
         });
       }
-      return { name:d.name, streak:d.streak, avgTime:d.avgTime||'--:--.--', dateSet };
+      return {
+        name:    d.name,
+        streak:  d.streak,
+        avgTime: d.avgTime || '--:--.--',
+        dateSet
+      };
     });
   }
 
-  // Date & Timer
+  // Date & timer utils
   function pickRandomDate() {
-    const modern = Math.random()<0.85;
-    const start  = modern ? new Date(1970,0,1) : new Date(1900,0,1);
-    const end    = modern ? new Date()           : new Date(1969,11,31);
-    return new Date(start.getTime() + Math.random()*(end.getTime()-start.getTime()));
+    const modern = Math.random() < 0.85;
+    const start  = modern
+      ? new Date(1970,0,1)
+      : new Date(1900,0,1);
+    const end    = modern
+      ? new Date()
+      : new Date(1969,11,31);
+    return new Date(start.getTime() + Math.random()*(end.getTime() - start.getTime()));
   }
   function formatTime(ms) {
-    const m=Math.floor(ms/60000),
-          s=Math.floor((ms%60000)/1000),
-          h=Math.floor((ms%1000)/10);
+    const m = Math.floor(ms/60000),
+          s = Math.floor((ms%60000)/1000),
+          h = Math.floor((ms%1000)/10);
     return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(h).padStart(2,'0')}`;
   }
   function startTimer() {
@@ -74,200 +90,233 @@ document.addEventListener('DOMContentLoaded', async () => {
     startTime = Date.now();
     timerEl.textContent = '00:00.00';
     timerInterval = setInterval(() => {
-      timerEl.textContent = formatTime(Date.now()-startTime);
-    },30);
+      timerEl.textContent = formatTime(Date.now() - startTime);
+    }, 30);
   }
-  function stopTimer() { clearInterval(timerInterval); }
+  function stopTimer() {
+    clearInterval(timerInterval);
+  }
 
-  // UI
+  // UI rendering
   function renderButtons() {
-    buttonsDiv.innerHTML='';
-    daysOrdered.forEach(day=>{
+    buttonsDiv.innerHTML = '';
+    daysOrdered.forEach(day => {
       const btn = document.createElement('button');
       btn.textContent = day;
       btn.className   = 'day-btn';
       btn.disabled    = false;
-      btn.onclick     = ()=> handleGuess(btn,day);
+      btn.onclick     = () => handleGuess(btn, day);
       buttonsDiv.appendChild(btn);
     });
   }
   function updateMetrics(elapsed) {
     solveTimes.push(elapsed);
-    const best=Math.min(...solveTimes),
-          sum=solveTimes.reduce((a,b)=>a+b,0),
-          avg=sum/solveTimes.length;
+    const best = Math.min(...solveTimes),
+          sum  = solveTimes.reduce((a,b)=>a+b, 0),
+          avg  = sum / solveTimes.length;
     bestTimeEl.textContent = formatTime(best);
     avgTimeEl.textContent  = formatTime(avg);
   }
 
-  // Codes
-  const centuryTable={17:0,18:5,19:3,20:2};
-  function centuryCode(y){ return centuryTable[Math.floor(y/100)]||0; }
-  function monthCode(m){
-    const map={1:0,2:3,3:3,4:6,5:1,6:4,7:6,8:2,9:5,10:0,11:3,12:5};
-    return map[m]||0;
+  // Century & month codes
+  const centuryTable = {17:0,18:5,19:3,20:2};
+  function centuryCode(year) {
+    return centuryTable[Math.floor(year/100)] || 0;
   }
-  function anchorDay(m,y){
-    const leap=(y%4===0&&y%100!==0)||(y%400===0);
-    const A={1:leap?4:3,2:14,3:14,4:4,5:9,6:6,7:4,8:8,9:5,10:10,11:7,12:12};
-    return A[m];
+  function monthCode(month) {
+    const map = {1:0,2:3,3:3,4:6,5:1,6:4,7:6,8:2,9:5,10:0,11:3,12:5};
+    return map[month] || 0;
   }
- // Replace your old computeYearCode with this:
-
-function computeYearCode(year) {
-  let y = year % 100;
-  const steps = [
-    `<span style="color:var(--navy)">${y}</span> (last two digits)`
-  ];
-
-  // Step 1: if odd, +11
-  if (y % 2 !== 0) {
-    steps.push(
-      `<span style="color:var(--highlight)">${y} is odd → +11 = ${y + 11}</span>`
-    );
-    y += 11;
-  }
-
-  // Step 2: divide by 2
-  steps.push(
-    `<span style="color:var(--gold)">${y} ÷ 2 = ${y / 2}</span>`
-  );
-  y /= 2;
-
-  // Step 3: if still odd, +11
-  if (y % 2 !== 0) {
-    steps.push(
-      `<span style="color:var(--highlight)">${y} is odd → +11 = ${y + 11}</span>`
-    );
-    y += 11;
-  }
-
-  // Now take remainder mod 7
-  const rem = y % 7;
-  steps.push(
-    `<span style="color:var(--green)">${y} mod 7 = ${rem}</span>`
-  );
-
-  // Finally 7’s-complement gives the doomsyear
-  const code = (7 - rem) % 7;
-  steps.push(
-    `<span style="color:var(--navy)">7 − ${rem} = ${code}</span>`
-  );
-
-  return { code, steps };
+  function anchorDay(month, year) {
+  const leap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  if (month === 1) return leap ? 4 : 3;
+  if (month === 2) return leap ? 15 : 14;          // ← now handles Feb 14 vs Feb 15
+  const table = {
+    3: 14, 4: 4, 5: 9, 6: 6,
+    7: 4,  8: 8, 9: 5, 10: 10,
+    11: 7, 12:12
+  };
+  return table[month] || 0;
 }
 
-  // Build explanation
-  function buildExplanation(d, guess){
-    const Y=d.getFullYear(),M=d.getMonth()+1,D=d.getDate();
-    const yc=computeYearCode(Y), cc=centuryCode(Y), mc=monthCode(M);
-    const total=yc.code+cc+mc+D, wdIdx=total%7, correct=daysOrdered[wdIdx];
-    const aDay=anchorDay(M,Y), sumA=yc.code+cc+mc+aDay,
-          aWd=daysOrdered[sumA%7], diff=D-aDay,
-          diffText=diff>0?`${diff} day${diff>1?'s':''} after`:`${Math.abs(diff)} day${Math.abs(diff)>1?'s':''} before`;
+  // Odd+11 year-code (two-step + 7's complement)
+  function computeYearCode(year) {
+    let y = year % 100;
+    const steps = [];
+    steps.push(`<span style="color:var(--navy)">${y}</span> (last two digits)`);
+
+    // Step 1: if odd
+    if (y % 2 !== 0) {
+      steps.push(`<span style="color:var(--highlight)">${y} is odd → +11 = ${y+11}</span>`);
+      y += 11;
+    }
+    // Step 2: divide by 2
+    steps.push(`<span style="color:var(--gold)">${y} ÷ 2 = ${y/2}</span>`);
+    y = y / 2;
+
+    // if still odd
+    if (y % 2 !== 0) {
+      steps.push(`<span style="color:var(--highlight)">${y} is odd → +11 = ${y+11}</span>`);
+      y += 11;
+    }
+
+    // mod 7
+    const rem = y % 7;
+    steps.push(`<span style="color:var(--green)">${y} mod 7 = ${rem}</span>`);
+
+    // 7's complement
+    const code = (7 - rem) % 7;
+    steps.push(`<span style="color:var(--navy)">7 − ${rem} = ${code}</span>`);
+
+    return { code, steps };
+  }
+
+  // Build “Why?” explanation
+  function buildExplanation(d, guess) {
+    const Y = d.getFullYear(),
+          M = d.getMonth() + 1,
+          D = d.getDate();
+
+    // compute codes
+    const yc = computeYearCode(Y),
+          cc = centuryCode(Y),
+          mc = monthCode(M);
+
+    // final weekday
+    const total   = yc.code + cc + mc + D,
+          wdIndex = total % 7,
+          correct = daysOrdered[wdIndex];
+
+    // anchor-day
+    const aDay     = anchorDay(M, Y),
+          sumA     = yc.code + cc + mc + aDay,
+          aWd      = daysOrdered[sumA % 7],
+          diff     = D - aDay,
+          diffText = diff > 0
+                     ? `${diff} day${diff>1?'s':''} after`
+                     : `${Math.abs(diff)} day${Math.abs(diff)>1?'s':''} before`;
 
     return `
       <p>For <strong>${d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</strong>:</p>
 
-      <p><strong>1) Year code</strong> via odd+11:<br>${yc.steps.join('<br>')}</p>
-      <p><strong>2) Century code</strong>: <strong>${cc}</strong> (1700→0,1800→5,1900→3,2000→2)</p>
-      <p><strong>3) Month code</strong>: <strong>${mc}</strong> &nbsp; <strong>4) Day</strong>: <strong>${D}</strong></p>
-      <p><strong>5) Total</strong>: ${yc.code}+${cc}+${mc}+${D} = <strong>${total}</strong><br>
-      <strong>6) Mod 7</strong>: ${total} mod 7 = <strong>${wdIdx}</strong> → <strong>${correct}</strong></p>
+      <p><strong>1) Year code</strong> via odd+11:<br>
+      ${yc.steps.join('<br>')}</p>
+
+      <p><strong>2) Century code</strong> (1700→0,1800→5,1900→3,2000→2): <strong>${cc}</strong></p>
+      <p><strong>3) Month code</strong>: <strong>${mc}</strong></p>
+      <p><strong>4) Day</strong>: <strong>${D}</strong></p>
+
+      <p><strong>5) Total</strong>: ${yc.code} + ${cc} + ${mc} + ${D} = <strong>${total}</strong><br>
+      <strong>6) Mod 7</strong>: ${total} mod 7 = <strong>${wdIndex}</strong> → <strong>${correct}</strong></p>
 
       <hr>
 
-      <p><strong>Anchor-day method</strong> (“doomsday”):</p>
+      <p><strong>Anchor-day method</strong>: each month’s anchor:</p>
       <ul style="list-style:none;text-align:left;padding:0;">
         <li>Jan ${anchorDay(1,Y)}, Feb 14, Mar 14, Apr 4, May 9, Jun 6,</li>
         <li>Jul 4, Aug 8, Sep 5, Oct 10, Nov 7, Dec 12</li>
       </ul>
-      <p><strong>${M}/${aDay}</strong> is on <strong>${aWd}</strong>. <strong>${M}/${D}</strong> is ${diffText} → <strong>${correct}</strong>.</p>
+      <p><strong>${M}/${aDay}</strong> is on <strong>${aWd}</strong>. 
+      Your date <strong>${M}/${D}</strong> is ${diffText} → <strong>${correct}</strong>.</p>
 
       <hr>
-      <p>Your answer was <strong style="color:var(--red)">${guess}</strong>, correct is <strong style="color:var(--green)">${correct}</strong>.</p>
+      <p>Your answer was <strong style="color:var(--red)">${guess}</strong>, 
+      correct is <strong style="color:var(--green)">${correct}</strong>.</p>
     `;
   }
 
-  // Handle guess
-  async function handleGuess(btn, day){
+  // Handle a guess
+  async function handleGuess(btn, day) {
     stopTimer();
-    const elapsed=Date.now()-startTime;
+    const elapsed = Date.now() - startTime;
     updateMetrics(elapsed);
-    document.querySelectorAll('.day-btn').forEach(b=>b.disabled=true);
+    document.querySelectorAll('.day-btn').forEach(b => b.disabled = true);
 
-    lastGuess=day;
-    if(day===daysOrdered[currentDate.getDay()]){
+    lastGuess = day;
+    if (day === daysOrdered[currentDate.getDay()]) {
       btn.classList.add('correct');
       dateDisplay.classList.add('correct');
-      score.correct++; score.streak++; streakTimes.push(elapsed);
+      score.correct++;
+      score.streak++;
+      streakTimes.push(elapsed);
     } else {
       btn.classList.add('wrong');
       dateDisplay.classList.add('wrong');
       score.wrong++;
-      whyBtn.style.display='inline-block';
+      whyBtn.style.display = 'inline-block';
 
-      // record end
-      const prev=await getHighScore();
-      if(score.streak>prev){
-        const sum=streakTimes.reduce((a,b)=>a+b,0),
-              avg=formatTime(sum/streakTimes.length),
-              name=prompt(`🎉 New record! Streak: ${score.streak}\nAvg time: ${avg}\nEnter name:`);
-        if(name) await saveStreak(name.trim(),score.streak,avg);
+      // end-of-streak record check
+      const prevMax = await getHighScore();
+      if (score.streak > prevMax) {
+        const sum   = streakTimes.reduce((a,b)=>a+b,0),
+              avg   = formatTime(sum / streakTimes.length),
+              name  = prompt(`🎉 New record! Streak: ${score.streak}\nAvg time: ${avg}\nEnter your name:`);
+        if (name) await saveStreak(name.trim(), score.streak, avg);
       }
-      score.streak=0; streakTimes=[];
-      document.querySelectorAll('.day-btn').forEach(b=>{
-        if(b.textContent===daysOrdered[currentDate.getDay()]) b.classList.add('expected');
+      score.streak = 0;
+      streakTimes = [];
+
+      document.querySelectorAll('.day-btn').forEach(b => {
+        if (b.textContent === daysOrdered[currentDate.getDay()]) {
+          b.classList.add('expected');
+        }
       });
     }
 
-    correctEl.textContent=score.correct;
-    wrongEl.textContent=score.wrong;
-    streakEl.textContent=score.streak;
-    nextBtn.style.display='inline-block';
+    correctEl.textContent = score.correct;
+    wrongEl.textContent   = score.wrong;
+    streakEl.textContent  = score.streak;
+    nextBtn.style.display  = 'inline-block';
   }
 
-  // New round
-  function newRound(){
+  // Start a new round
+  function newRound() {
     dateDisplay.classList.remove('correct','wrong');
-    buttonsDiv.innerHTML='';
-    whyBtn.style.display='none';
-    nextBtn.style.display='none';
-    startBtn.style.display='none';
+    buttonsDiv.innerHTML  = '';
+    whyBtn.style.display   = 'none';
+    nextBtn.style.display  = 'none';
+    startBtn.style.display = 'none';
 
-    currentDate=pickRandomDate();
-    dateDisplay.textContent=currentDate.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    currentDate = pickRandomDate();
+    dateDisplay.textContent = currentDate.toLocaleDateString('en-US',{
+      year:'numeric', month:'long', day:'numeric'
+    });
+
     renderButtons();
     startTimer();
   }
 
-  // Why? popup
-  whyBtn.onclick=()=>{
-    whyContent.innerHTML=buildExplanation(currentDate,lastGuess);
+  // “Why?” popup
+  whyBtn.onclick = () => {
+    whyContent.innerHTML = buildExplanation(currentDate, lastGuess);
     whyModal.classList.remove('hidden');
   };
-  closeWhyBtn.onclick=()=>whyModal.classList.add('hidden');
+  closeWhyBtn.onclick = () => {
+    whyModal.classList.add('hidden');
+  };
 
   // Leaderboard popup
-  leaderboardBtn.onclick=async()=>{
-    const data=await loadLeaderboardData();
-    lbList.innerHTML='';
-    data.forEach(e=>{
-      const li=document.createElement('li');
-      li.innerHTML=`<strong>${e.name}</strong> – Streak: ${e.streak}, Avg: ${e.avgTime}, Date: ${e.dateSet}`;
+  leaderboardBtn.onclick = async () => {
+    const entries = await loadLeaderboardData();
+    lbList.innerHTML = '';
+    entries.forEach(e => {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${e.name}</strong> – Streak: ${e.streak}, Avg: ${e.avgTime}, Date: ${e.dateSet}`;
       lbList.appendChild(li);
     });
     lbModal.classList.remove('hidden');
   };
-  closeLbBtn.onclick=()=>lbModal.classList.add('hidden');
+  closeLbBtn.onclick = () => {
+    lbModal.classList.add('hidden');
+  };
 
-  // Wire Start/Next
-  startBtn.onclick=newRound;
-  nextBtn.onclick=newRound;
+  // Wire Start & Next
+  startBtn.onclick = newRound;
+  nextBtn.onclick  = newRound;
 
   // Initial UI
-  nextBtn.style.display='none';
-  startBtn.style.display='inline-block';
+  nextBtn.style.display  = 'none';
+  startBtn.style.display = 'inline-block';
   lbModal.classList.add('hidden');
   whyModal.classList.add('hidden');
 });
