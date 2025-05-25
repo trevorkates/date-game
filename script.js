@@ -123,10 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function centuryCode(year) {
     return centuryTable[Math.floor(year/100)] || 0;
   }
-  function monthCode(month) {
-    const map = {1:0,2:3,3:3,4:6,5:1,6:4,7:6,8:2,9:5,10:0,11:3,12:5};
-    return map[month] || 0;
-  }
+
   function anchorDay(month, year) {
   const leap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
   if (month === 1) return leap ? 4 : 3;
@@ -179,19 +176,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // compute codes
     const yc = computeYearCode(Y),
-          cc = centuryCode(Y),
-          mc = monthCode(M);
+          cc = centuryCode(Y);
 
     // final weekday
-    const total   = yc.code + cc + mc + D,
-          wdIndex = total % 7,
-          correct = daysOrdered[wdIndex];
+    const total   = yc.code + cc,
+          wdIndex = total % 7;
 
     // anchor-day
     const aDay     = anchorDay(M, Y),
-          sumA     = yc.code + cc + mc + aDay,
-          aWd      = daysOrdered[sumA % 7],
           diff     = D - aDay,
+          idx = ((wdIndex + diff) % 7 + 7) % 7,
+          correct = daysOrdered[idx],
           diffText = diff > 0
                      ? `${diff} day${diff>1?'s':''} after`
                      : `${Math.abs(diff)} day${Math.abs(diff)>1?'s':''} before`;
@@ -203,11 +198,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       ${yc.steps.join('<br>')}</p>
 
       <p><strong>2) Century code</strong> (1700→0,1800→5,1900→3,2000→2): <strong>${cc}</strong></p>
-      <p><strong>3) Month code</strong>: <strong>${mc}</strong></p>
-      <p><strong>4) Day</strong>: <strong>${D}</strong></p>
 
-      <p><strong>5) Total</strong>: ${yc.code} + ${cc} + ${mc} + ${D} = <strong>${total}</strong><br>
-      <strong>6) Mod 7</strong>: ${total} mod 7 = <strong>${wdIndex}</strong> → <strong>${correct}</strong></p>
+      <p><strong>3) Total</strong>: ${yc.code} + ${cc} = <strong>${total}</strong><br>
 
       <hr>
 
@@ -215,9 +207,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       <ul style="list-style:none;text-align:left;padding:0;">
         <li>Jan ${anchorDay(1,Y)}, Feb ${anchorDay(2,Y)}, Mar 14, Apr 4, May 9, Jun 6,</li>
         <li>Jul 4, Aug 8, Sep 5, Oct 10, Nov 7, Dec 12</li>
-      </ul>
-      <p><strong>${M}/${aDay}</strong> is on <strong>${aWd}</strong>. 
-      Your date <strong>${M}/${D}</strong> is ${diffText} → <strong>${correct}</strong>.</p>
+      </ul> 
+      Your date <strong>${M}/${D}</strong> is ${diffText} <p><strong>${M}/${aDay}</strong> → <strong>${correct}</strong>.</p>
 
       <hr>
       <p>Your answer was <strong style="color:var(--red)">${guess}</strong>, 
