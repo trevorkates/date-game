@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     lbList.innerHTML = '';
     entries.forEach(e => {
       const li = document.createElement('li');
-      li.innerHTML = `<strong>${e.name}</strong> – Streak: ${e.streak}, Avg: ${e.avgTime}, ${e.dateSet}`;
+      li.innerHTML = `<strong>${e.name}</strong> – Streak: ${e.streak}, Avg. Time: ${e.avgTime}, on ${e.dateSet}`;
       lbList.appendChild(li);
     });
     lbModal.classList.remove('hidden');
