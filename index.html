@@ -5,11 +5,11 @@
   <title>Date Game</title>
   <link rel="stylesheet" href="style.css">
 
-  <!-- ★ FIREBASE COMPAT SDKs via CDN (needed for our script.js) -->
+  <!-- FIREBASE COMPAT SDKs via CDN -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-  <!-- ★ Your actual Firebase config (from your console screenshot) -->
+  <!-- YOUR FIREBASE CONFIG -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDh3UO7iKqWZ_9QtnJMJvNmGdjpNXV6Llo",
@@ -20,7 +20,6 @@
       appId: "1:302378231103:web:b1643cefb25a766a0bdf8a",
       measurementId: "G-K5QL05DE4N"
     };
-    // Initialize Firebase & Firestore
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
   </script>
@@ -30,10 +29,13 @@
     <div id="date-display"></div>
     <div id="timer">00:00.00</div>
     <div id="buttons"></div>
+
     <div id="controls">
-      <button id="next-btn">Next</button>
+      <button id="start-btn">Start</button>
+      <button id="next-btn" style="display:none;">Next</button>
       <button id="leaderboard-btn">Leaderboard</button>
     </div>
+
     <div id="scoreboard">
       Correct: <span id="correct-count">0</span> 
       Wrong:   <span id="wrong-count">0</span> 
@@ -54,7 +56,6 @@
     </div>
   </div>
 
-  <!-- Your game logic -->
   <script src="script.js"></script>
 </body>
 </html>
