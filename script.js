@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <p><strong>1) Year code</strong> via odd+11:<br>
       ${yc.steps.join('<br>')}</p>
 
-      <p><strong>2) Century code</strong> (1700→0,1800→5,1900→3,2000→2): <strong>${cc}</strong></p>
+      <p><strong>2) Century code</strong> (1700→0, 1800→5, 1900→3, 2000→2): <strong>${cc}</strong></p>
 
       <p><strong>3) Total</strong>: ${yc.code} + ${cc} = <strong>${total}</strong><br>
 
