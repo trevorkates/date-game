@@ -211,9 +211,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       <hr>
 
-      <p><strong>Anchor-day method</strong>: each month’s anchor:</p>
+      <p><strong>Anchor-day method</strong> (this day is always year code + century code)</p>
       <ul style="list-style:none;text-align:left;padding:0;">
-        <li>Jan ${anchorDay(1,Y)}, Feb 14, Mar 14, Apr 4, May 9, Jun 6,</li>
+        <li>Jan ${anchorDay(1,Y)}, Feb ${anchorDay(2,Y)}, Mar 14, Apr 4, May 9, Jun 6,</li>
         <li>Jul 4, Aug 8, Sep 5, Oct 10, Nov 7, Dec 12</li>
       </ul>
       <p><strong>${M}/${aDay}</strong> is on <strong>${aWd}</strong>. 
