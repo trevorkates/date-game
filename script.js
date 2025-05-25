@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   alert("Guess the day of the week for the randomly generated date!");
 
   // Day names
-  const daysOrdered = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const daysOrdered = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday', 'Sunday'];
 
   // State
   let currentDate, lastGuess;
@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const aDay     = anchorDay(M, Y),
           diff     = D - aDay,
           idx = ((wdIndex + diff) % 7 + 7) % 7,
-          correct = daysOrdered[idx],
+          correct = daysOrdered[idx - 1],
       // helper to pick “s” only if the number isn’t 1
           plural = n => n === 1 ? '' : 's',
           diffText = diff > 0
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.day-btn').forEach(b => b.disabled = true);
 
     lastGuess = day;
-    if (day === daysOrdered[currentDate.getDay()]) {
+    if (day === daysOrdered[currentDate.getDay() - 1]) {
       btn.classList.add('correct');
       dateDisplay.classList.add('correct');
       score.correct++;
