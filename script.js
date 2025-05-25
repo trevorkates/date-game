@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const daysOrdered = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   let startTime, timerInterval, currentAnswer;
-  let score = { correct:0, wrong:0, streak:0 }, solveTimes = [], streakTimes = [];
+  let score = { correct: 0, wrong: 0, streak: 0 }, solveTimes = [], streakTimes = [];
 
-  // grab elements
+  // DOM refs
   const dateDisplay    = document.getElementById('date-display'),
         timerEl        = document.getElementById('timer'),
         buttonsDiv     = document.getElementById('buttons'),
@@ -27,19 +27,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     return snap.empty ? 0 : snap.docs[0].data().streak;
   }
   async function saveStreak(name, streak, avgTime) {
-    await streaksRef.add({
-      name: name.trim(),
-      streak,
-      avgTime,                                  // store the average time
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    // avgTime is a string like "00:05.23"
+    await streaksRef.add({ name: name.trim(), streak, avgTime, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
   }
   async function loadLeaderboardData() {
     const snap = await streaksRef.orderBy('streak','desc').limit(10).get();
-    return snap.docs.map(d => d.data());
+    // extract only the fields we care about
+    return snap.docs.map(doc => {
+      const { name, streak, avgTime } = doc.data();
+      return { name, streak, avgTime };
+    });
   }
 
-  // date/timer utilities
+  // date & timer
   function pickRandomDate() {
     if (Math.random() < 0.85) {
       const a = new Date(1970,0,1).getTime(), b = Date.now();
@@ -59,13 +59,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     clearInterval(timerInterval);
     startTime = Date.now();
     timerEl.textContent = '00:00.00';
-    timerInterval = setInterval(()=>{
+    timerInterval = setInterval(() => {
       timerEl.textContent = formatTime(Date.now() - startTime);
-    },30);
+    }, 30);
   }
   function stopTimer() { clearInterval(timerInterval); }
 
-  // render day buttons & update metrics
+  // UI rendering
   function renderButtons() {
     buttonsDiv.innerHTML = '';
     daysOrdered.forEach(day => {
@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     solveTimes.push(elapsed);
     const best = Math.min(...solveTimes),
           sum  = solveTimes.reduce((a,b)=>a+b,0),
-          avg  = sum / solveTimes.length;
+          avg  = sum/solveTimes.length;
     bestTimeEl.textContent = formatTime(best);
     avgTimeEl.textContent  = formatTime(avg);
   }
@@ -95,19 +95,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.day-btn').forEach(b => b.disabled = true);
 
     if (day === currentAnswer) {
-      // correct guess
+      // correct
       btn.classList.add('correct');
       dateDisplay.classList.add('correct');
       score.correct++;
       score.streak++;
-      streakTimes.push(elapsed);          // record correct-answer time
+      streakTimes.push(elapsed);
 
     } else {
-      // wrong guess → streak ends
+      // wrong → streak ends, check for record
       const finalStreak = score.streak;
       const prevMax     = await getHighScore();
       if (finalStreak > prevMax) {
-        // calculate average excluding this wrong guess
+        // compute average over only the correct-answer times
         const sumCorrect = streakTimes.reduce((a,b)=>a+b,0);
         const avgCorrect = sumCorrect / streakTimes.length;
         const avgStr     = formatTime(avgCorrect);
@@ -123,20 +123,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       dateDisplay.classList.add('wrong');
       score.wrong++;
       score.streak = 0;
-      streakTimes = [];                  // reset for next streak
+      streakTimes = [];
 
       document.querySelectorAll('.day-btn').forEach(b => {
         if (b.textContent === currentAnswer) b.classList.add('expected');
       });
     }
 
+    // update scoreboard & show Next
     correctEl.textContent = score.correct;
     wrongEl.textContent   = score.wrong;
     streakEl.textContent  = score.streak;
     nextBtn.style.display  = 'inline-block';
   }
 
-  // start next round
+  // next round
   function newRound() {
     dateDisplay.classList.remove('correct','wrong');
     buttonsDiv.innerHTML = '';
@@ -147,8 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           jsDay = d.getDay(),
           idx   = jsDay === 0 ? 6 : jsDay - 1;
     currentAnswer = daysOrdered[idx];
-
-    dateDisplay.textContent = d.toLocaleDateString('en-US',{
+    dateDisplay.textContent = d.toLocaleDateString('en-US', {
       year:'numeric', month:'long', day:'numeric'
     });
 
@@ -156,13 +156,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     startTimer();
   }
 
-  // leaderboard modal
+  // leaderboard popup
   leaderboardBtn.onclick = async () => {
     const entries = await loadLeaderboardData();
     lbList.innerHTML = '';
     entries.forEach(e => {
       const li = document.createElement('li');
-      li.textContent = `${e.name}: ${e.streak} (avg ${e.avgTime})`;
+      li.innerHTML = `<strong>${e.name}</strong> – Streak: ${e.streak}, Avg: ${e.avgTime}`;
       lbList.appendChild(li);
     });
     lbModal.classList.remove('hidden');
