@@ -1,10 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const daysOrdered = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   let startTime, timerInterval, currentAnswer;
-  let score = { correct:0, wrong:0, streak:0 }, solveTimes = [];
-  let streakTimes = [];  // only correct-answer times for the current streak
+  let score = { correct:0, wrong:0, streak:0 }, solveTimes = [], streakTimes = [];
 
-  // DOM refs
+  // grab elements
   const dateDisplay    = document.getElementById('date-display'),
         timerEl        = document.getElementById('timer'),
         buttonsDiv     = document.getElementById('buttons'),
@@ -27,10 +26,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const snap = await streaksRef.orderBy('streak','desc').limit(1).get();
     return snap.empty ? 0 : snap.docs[0].data().streak;
   }
-  async function saveStreak(name, streak) {
+  async function saveStreak(name, streak, avgTime) {
     await streaksRef.add({
       name: name.trim(),
       streak,
+      avgTime,                                  // store the average time
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
   }
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return snap.docs.map(d => d.data());
   }
 
-  // date/timer
+  // date/timer utilities
   function pickRandomDate() {
     if (Math.random() < 0.85) {
       const a = new Date(1970,0,1).getTime(), b = Date.now();
@@ -59,13 +59,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     clearInterval(timerInterval);
     startTime = Date.now();
     timerEl.textContent = '00:00.00';
-    timerInterval = setInterval(() => {
+    timerInterval = setInterval(()=>{
       timerEl.textContent = formatTime(Date.now() - startTime);
-    }, 30);
+    },30);
   }
   function stopTimer() { clearInterval(timerInterval); }
 
-  // render buttons
+  // render day buttons & update metrics
   function renderButtons() {
     buttonsDiv.innerHTML = '';
     daysOrdered.forEach(day => {
@@ -81,12 +81,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     solveTimes.push(elapsed);
     const best = Math.min(...solveTimes),
           sum  = solveTimes.reduce((a,b)=>a+b,0),
-          avg  = sum/solveTimes.length;
+          avg  = sum / solveTimes.length;
     bestTimeEl.textContent = formatTime(best);
     avgTimeEl.textContent  = formatTime(avg);
   }
 
-  // guess logic
+  // handle each guess
   async function handleGuess(btn, day) {
     stopTimer();
     const elapsed = Date.now() - startTime;
@@ -95,49 +95,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.day-btn').forEach(b => b.disabled = true);
 
     if (day === currentAnswer) {
-      // correct
+      // correct guess
       btn.classList.add('correct');
       dateDisplay.classList.add('correct');
       score.correct++;
       score.streak++;
-      streakTimes.push(elapsed);       // record this correct-answer time
+      streakTimes.push(elapsed);          // record correct-answer time
 
     } else {
-      // wrong → check record now that streak has ended
+      // wrong guess → streak ends
       const finalStreak = score.streak;
       const prevMax     = await getHighScore();
       if (finalStreak > prevMax) {
-        // compute average of just the correct-answer times
-        const sum   = streakTimes.reduce((a,b)=>a+b,0);
-        const avg   = sum / streakTimes.length;
-        const avgStr = formatTime(avg);
-        const name  = prompt(
+        // calculate average excluding this wrong guess
+        const sumCorrect = streakTimes.reduce((a,b)=>a+b,0);
+        const avgCorrect = sumCorrect / streakTimes.length;
+        const avgStr     = formatTime(avgCorrect);
+
+        const name = prompt(
           `🎉 New record! You hit a streak of ${finalStreak}.\n` +
           `Your average time was ${avgStr}.\nEnter your name:`
         );
-        if (name) await saveStreak(name, finalStreak);
+        if (name) await saveStreak(name, finalStreak, avgStr);
       }
 
       btn.classList.add('wrong');
       dateDisplay.classList.add('wrong');
       score.wrong++;
       score.streak = 0;
-      streakTimes = [];               // reset for the next streak
+      streakTimes = [];                  // reset for next streak
 
-      // highlight correct button
       document.querySelectorAll('.day-btn').forEach(b => {
         if (b.textContent === currentAnswer) b.classList.add('expected');
       });
     }
 
-    // update display & show Next
     correctEl.textContent = score.correct;
     wrongEl.textContent   = score.wrong;
     streakEl.textContent  = score.streak;
     nextBtn.style.display  = 'inline-block';
   }
 
-  // new round
+  // start next round
   function newRound() {
     dateDisplay.classList.remove('correct','wrong');
     buttonsDiv.innerHTML = '';
@@ -148,7 +147,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           jsDay = d.getDay(),
           idx   = jsDay === 0 ? 6 : jsDay - 1;
     currentAnswer = daysOrdered[idx];
-    dateDisplay.textContent = d.toLocaleDateString('en-US', {
+
+    dateDisplay.textContent = d.toLocaleDateString('en-US',{
       year:'numeric', month:'long', day:'numeric'
     });
 
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     lbList.innerHTML = '';
     entries.forEach(e => {
       const li = document.createElement('li');
-      li.textContent = `${e.name}: ${e.streak}`;
+      li.textContent = `${e.name}: ${e.streak} (avg ${e.avgTime})`;
       lbList.appendChild(li);
     });
     lbModal.classList.remove('hidden');
