@@ -4,27 +4,28 @@
   let score = { correct:0, wrong:0, streak:0 }, solveTimes = [];
 
   // DOM refs
-  const dateDisplay      = document.getElementById('date-display'),
-        timerEl          = document.getElementById('timer'),
-        buttonsDiv       = document.getElementById('buttons'),
-        nextBtn          = document.getElementById('next-btn'),
-        leaderboardBtn   = document.getElementById('leaderboard-btn'),
-        correctEl        = document.getElementById('correct-count'),
-        wrongEl          = document.getElementById('wrong-count'),
-        streakEl         = document.getElementById('streak-count'),
-        bestTimeEl       = document.getElementById('best-time'),
-        avgTimeEl        = document.getElementById('avg-time'),
-        lbModal          = document.getElementById('leaderboard-modal'),
-        lbList           = document.getElementById('leaderboard-list'),
-        closeLbBtn       = document.getElementById('close-leaderboard');
+  const dateDisplay    = document.getElementById('date-display'),
+        timerEl        = document.getElementById('timer'),
+        buttonsDiv     = document.getElementById('buttons'),
+        startBtn       = document.getElementById('start-btn'),
+        nextBtn        = document.getElementById('next-btn'),
+        leaderboardBtn = document.getElementById('leaderboard-btn'),
+        correctEl      = document.getElementById('correct-count'),
+        wrongEl        = document.getElementById('wrong-count'),
+        streakEl       = document.getElementById('streak-count'),
+        bestTimeEl     = document.getElementById('best-time'),
+        avgTimeEl      = document.getElementById('avg-time'),
+        lbModal        = document.getElementById('leaderboard-modal'),
+        lbList         = document.getElementById('leaderboard-list'),
+        closeLbBtn     = document.getElementById('close-leaderboard');
 
-  // Firestore helpers
   const streaksRef = db.collection('streaks');
+
   async function getHighScore(){
     const snap = await streaksRef.orderBy('streak','desc').limit(1).get();
     return snap.empty ? 0 : snap.docs[0].data().streak;
   }
-  async function saveStreak(name, streak){
+  async function saveStreak(name,streak){
     await streaksRef.add({
       name: name.trim(),
       streak,
@@ -36,7 +37,6 @@
     return snap.docs.map(d=>d.data());
   }
 
-  // Date + timer
   function pickRandomDate(){
     if (Math.random()<0.85){
       const a=new Date(1970,0,1).getTime(), b=Date.now();
@@ -54,15 +54,14 @@
   }
   function startTimer(){
     clearInterval(timerInterval);
-    startTime=Date.now();
-    timerEl.textContent='00:00.00';
-    timerInterval=setInterval(()=> {
-      timerEl.textContent=formatTime(Date.now()-startTime);
+    startTime = Date.now();
+    timerEl.textContent = '00:00.00';
+    timerInterval = setInterval(()=>{
+      timerEl.textContent = formatTime(Date.now()-startTime);
     },30);
   }
   function stopTimer(){ clearInterval(timerInterval); }
 
-  // UI
   function renderButtons(){
     buttonsDiv.innerHTML='';
     daysOrdered.forEach(day=>{
@@ -70,7 +69,7 @@
       btn.textContent=day;
       btn.className='day-btn';
       btn.disabled=false;
-      btn.onclick=()=>handleGuess(btn,day);
+      btn.onclick=()=> handleGuess(btn,day);
       buttonsDiv.appendChild(btn);
     });
   }
@@ -83,8 +82,7 @@
     avgTimeEl.textContent=formatTime(avg);
   }
 
-  // Guess
-  async function handleGuess(btn, day){
+  async function handleGuess(btn,day){
     stopTimer();
     const elapsed=Date.now()-startTime;
     updateMetrics(elapsed);
@@ -94,7 +92,6 @@
       btn.classList.add('correct');
       dateDisplay.classList.add('correct');
       score.correct++; score.streak++;
-      // new record?
       const prevMax = await getHighScore();
       if(score.streak>prevMax){
         const name=prompt('🎉 New record! Enter your name:');
@@ -115,24 +112,25 @@
     nextBtn.style.display='inline-block';
   }
 
-  // New round
   function newRound(){
     dateDisplay.classList.remove('correct','wrong');
     buttonsDiv.innerHTML='';
     nextBtn.style.display='none';
+    startBtn.style.display='none';
 
     const d=pickRandomDate(),
           jsDay=d.getDay(),
-          idx=jsDay===0?6:jsDay-1;
+          idx= jsDay===0?6:jsDay-1;
     currentAnswer=daysOrdered[idx];
     dateDisplay.textContent=d.toLocaleDateString('en-US',{
       year:'numeric',month:'long',day:'numeric'
     });
+
     renderButtons();
     startTimer();
   }
 
-  // Leaderboard
+  // Leaderboard popup
   leaderboardBtn.onclick=async ()=>{
     const entries=await loadLeaderboardData();
     lbList.innerHTML='';
@@ -144,8 +142,15 @@
     lbModal.classList.remove('hidden');
   };
   closeLbBtn.onclick=()=> lbModal.classList.add('hidden');
+
+  // Start vs Next
+  startBtn.onclick=newRound;
   nextBtn.onclick=newRound;
 
-  // start
-  newRound();
+  // on load, only show Start
+  nextBtn.style.display='none';
+  startBtn.style.display='inline-block';
+
+  // hide modal initially
+  lbModal.classList.add('hidden');
 })();
