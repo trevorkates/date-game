@@ -1,69 +1,146 @@
 :root {
-  --navy: #02132b; --gold: #c5a87c; --white: #ffffff;
-  --red: #e74c3c; --green: #2ecc71; --highlight: #f1c40f;
-  --btn-bg: #0c183f; --btn-text: #ffffff;
+  --navy: #02132b;
+  --gold: #c5a87c;
+  --white: #ffffff;
+  --red: #e74c3c;
+  --green: #2ecc71;
+  --highlight: #f1c40f;
+  --btn-bg: #0c183f;
+  --btn-text: #ffffff;
 }
 
 #date-game {
   font-family: inherit, sans-serif;
-  max-width: 600px; margin: 1.5em auto; padding: 2em;
-  background: var(--white); border: none; border-radius: 8px;
+  max-width: 600px;
+  margin: 1.5em auto;
+  padding: 2em;
+  background: var(--white);
+  border: none;
+  border-radius: 8px;
   text-align: center;
 }
 
-#date-display { font-size: 3em; margin: .75em 0; color: var(--navy); }
-#timer        { font-size: 2em; margin-bottom: .75em; color: var(--gold); }
+#date-display {
+  font-size: 3em;
+  margin: 0.75em 0;
+  color: var(--navy);
+}
+
+#timer {
+  font-size: 2em;
+  margin-bottom: 0.75em;
+  color: var(--gold);
+}
 
 .day-btn {
-  margin: .5em; padding: 1em 2em; font-size: 1.3em;
-  background: var(--btn-bg); color: var(--btn-text);
-  border: 1px solid var(--gold); border-radius: 4px; cursor: pointer;
+  margin: 0.5em;
+  padding: 1em 2em;
+  font-size: 1.3em;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  cursor: pointer;
 }
-.day-btn:disabled { opacity: .6; cursor: default; }
-.day-btn.correct  { background: var(--green);   color: #fff; border-color: var(--green); }
-.day-btn.wrong    { background: var(--red);     color: #fff; border-color: var(--red); }
-.day-btn.expected { background: var(--highlight);color: var(--navy);border-color: var(--highlight); }
+.day-btn:disabled { opacity: 0.6; cursor: default; }
+.day-btn.correct   { background: var(--green);    color: var(--white); border-color: var(--green); }
+.day-btn.wrong     { background: var(--red);      color: var(--white); border-color: var(--red); }
+.day-btn.expected  { background: var(--highlight); color: var(--navy);  border-color: var(--highlight); }
 
 #controls button {
-  margin: .6em .5em; padding: 1em 2em; font-size: 1.3em;
-  background: var(--gold); color: var(--navy);
-  border: none; border-radius: 4px; cursor: pointer;
+  margin: 0.6em 0.5em;
+  padding: 1em 2em;
+  font-size: 1.3em;
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
-#controls button:hover { opacity: .9; }
+#controls button:hover { opacity: 0.9; }
 
-#scoreboard, #metrics {
-  margin-top: 1em; font-size: 1.3em; color: var(--navy);
+#scoreboard,
+#metrics {
+  margin-top: 1em;
+  font-size: 1.3em;
+  color: var(--navy);
 }
-#scoreboard span, #metrics span { font-weight: bold; }
-#correct-count { color: var(--green); } #wrong-count { color: var(--red); }
+#scoreboard span,
+#metrics span { font-weight: bold; }
+#correct-count { color: var(--green); }
+#wrong-count   { color: var(--red);   }
 
-/* Modal */
+/* Leaderboard modal styling */
 .modal {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,.5); display: flex; align-items: center;
-  justify-content: center; z-index: 1000;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 .modal.hidden { display: none; }
+
 .modal-content {
-  background: #fff; padding: 2em; border-radius: 8px; max-width: 90%;
-  width: 400px; text-align: center;
+  background: var(--white);
+  padding: 2em;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 90%;
+  width: 400px;
 }
+
 #leaderboard-list {
-  list-style: decimal; padding-left: 1.2em; max-height: 300px;
-  overflow-y: auto; text-align: left;
+  list-style: decimal;
+  padding-left: 1.2em;
+  text-align: left;
+  max-height: 300px;
+  overflow-y: auto;
 }
+#leaderboard-list li {
+  margin: 0.5em 0;
+}
+
 #close-leaderboard {
-  margin-top: 1em; padding: .8em 1.5em; font-size: 1.1em;
-  background: var(--navy); color: #fff; border: none; border-radius: 4px;
+  margin-top: 1em;
+  padding: 0.8em 1.5em;
+  font-size: 1.1em;
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-/* Mobile */
-@media (max-width:600px){
-  #date-game { padding:1em; }
-  #date-display { font-size:2.5em; }
-  #timer        { font-size:1.8em; }
-  .day-btn, #controls button, #close-leaderboard {
-    width:100%; padding:.8em; font-size:1.2em;
+/* Mobile tweaks */
+@media (max-width: 600px) {
+  #date-game {
+    padding: 1em;
+  }
+  #date-display {
+    font-size: 2.5em;
+  }
+  #timer {
+    font-size: 1.8em;
+  }
+  .day-btn,
+  #controls button,
+  #close-leaderboard {
+    width: 100%;
+    max-width: none;
+    padding: 0.8em;
+    font-size: 1.2em;
+  }
+  /* Move modal content toward top */
+  .modal {
+    align-items: flex-start !important;
+    padding-top: 2em !important;
+  }
+  .modal-content {
+    width: 90% !important;
+    max-width: none !important;
+    margin: 0 1em !important;
   }
 }
