@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let startTime, timerInterval, currentAnswer;
   let score = { correct:0, wrong:0, streak:0 }, solveTimes = [];
 
-  // DOM refs
+  // grab elements
   const dateDisplay    = document.getElementById('date-display'),
         timerEl        = document.getElementById('timer'),
         buttonsDiv     = document.getElementById('buttons'),
@@ -38,14 +38,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     return snap.docs.map(d => d.data());
   }
 
-  // Date + timer
+  // date & timer
   function pickRandomDate(){
     if (Math.random() < 0.85) {
       const a = new Date(1970,0,1).getTime(), b = Date.now();
-      return new Date(a + Math.random()*(b - a));
+      return new Date(a + Math.random()*(b-a));
     } else {
       const a = new Date(1900,0,1).getTime(), b = new Date(1969,11,31).getTime();
-      return new Date(a + Math.random()*(b - a));
+      return new Date(a + Math.random()*(b-a));
     }
   }
   function formatTime(ms){
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   function stopTimer(){ clearInterval(timerInterval); }
 
-  // Render the day buttons
+  // render day buttons
   function renderButtons(){
     buttonsDiv.innerHTML = '';
     daysOrdered.forEach(day => {
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     avgTimeEl.textContent  = formatTime(avg);
   }
 
-  // Handle a guess
+  // handle a guess
   async function handleGuess(btn, day){
     stopTimer();
     const elapsed = Date.now() - startTime;
@@ -110,8 +110,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       dateDisplay.classList.add('wrong');
       score.wrong++;
       score.streak = 0;
-
-      document.querySelectorAll('.day-btn').forEach(b => {
+      // show expected
+      document.querySelectorAll('.day-btn').forEach(b=>{
         if (b.textContent === currentAnswer) b.classList.add('expected');
       });
     }
@@ -122,26 +122,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     nextBtn.style.display  = 'inline-block';
   }
 
-  // Start a new round
+  // new round
   function newRound(){
     dateDisplay.classList.remove('correct','wrong');
     buttonsDiv.innerHTML = '';
-    nextBtn.style.display = 'none';
+    nextBtn.style.display  = 'none';
     startBtn.style.display = 'none';
 
-    const d = pickRandomDate(),
+    const d     = pickRandomDate(),
           jsDay = d.getDay(),
           idx   = jsDay === 0 ? 6 : jsDay - 1;
     currentAnswer = daysOrdered[idx];
     dateDisplay.textContent = d.toLocaleDateString('en-US',{
-      year: 'numeric', month: 'long', day: 'numeric'
+      year:'numeric',month:'long',day:'numeric'
     });
 
     renderButtons();
     startTimer();
   }
 
-  // Leaderboard popup
+  // leaderboard popup
   leaderboardBtn.onclick = async () => {
     const entries = await loadLeaderboardData();
     lbList.innerHTML = '';
@@ -154,12 +154,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
   closeLbBtn.onclick = () => lbModal.classList.add('hidden');
 
-  // Wire Start/Next
+  // wire start/next
   startBtn.onclick = newRound;
   nextBtn.onclick  = newRound;
 
-  // Initial UI state
-  nextBtn.style.display  = 'none';
+  // initial UI
+  nextBtn.style.display = 'none';
   startBtn.style.display = 'inline-block';
   lbModal.classList.add('hidden');
-})();
+});
