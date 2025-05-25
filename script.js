@@ -187,9 +187,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           diff     = D - aDay,
           idx = ((wdIndex + diff) % 7 + 7) % 7,
           correct = daysOrdered[idx],
+      // helper to pick “s” only if the number isn’t 1
+          plural = n => n === 1 ? '' : 's',
           diffText = diff > 0
-                     ? `${diff} day${diff>1?'s':''} after`
-                     : `${Math.abs(diff)} day${Math.abs(diff)>1?'s':''} before`;
+              ? `${diff} day${plural(diff)} after`
+              : `${Math.abs(diff)} day${plural(Math.abs(diff))} before`;
 
     return `
       <p>For <strong>${d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</strong>:</p>
@@ -208,8 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <li>Jan ${anchorDay(1,Y)}, Feb ${anchorDay(2,Y)}, Mar 14, Apr 4, May 9, Jun 6,</li>
         <li>Jul 4, Aug 8, Sep 5, Oct 10, Nov 7, Dec 12</li>
       </ul> 
-      Your date <strong>${M}/${D}</strong> is ${diffText} <p><strong>${M}/${aDay}</strong> → <strong>${correct}</strong>.</p>
-
+      Your date <strong>${M}/${D}</strong> is ${diffText} <strong>${M}/${aDay}</strong> → <strong>${correct}</strong>.
       <hr>
       <p>Your answer was <strong style="color:var(--red)">${guess}</strong>, 
       correct is <strong style="color:var(--green)">${correct}</strong>.</p>
