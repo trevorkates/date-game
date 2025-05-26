@@ -68,6 +68,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+    // Get the 10th-best streak (or 0 if there aren’t yet 10 entries)
+  async function getThresholdScore() {
+    const snap = await streaksRef
+      .orderBy('streak', 'desc')
+      .limit(10)
+      .get();
+    if (snap.size < 10) return 0;
+    return snap.docs[9].data().streak;  // 0-indexed → 9 is the 10th
+  }
+
   // Date & timer utils
   function pickRandomDate() {
     const modern = Math.random() < 0.85;
@@ -237,16 +247,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       score.wrong++;
       whyBtn.style.display = 'inline-block';
 
-      // end-of-streak record check
-      const prevMax = await getHighScore();
-      if (score.streak > prevMax) {
-        const sum   = streakTimes.reduce((a,b)=>a+b,0),
-              avg   = formatTime(sum / streakTimes.length),
-              name  = prompt(`🎉 New record! Streak: ${score.streak}\nAvg time: ${avg}\nEnter your name:`);
-        if (name) await saveStreak(name.trim(), score.streak, avg);
+          // … after you mark the button wrong and show “Why?” …
+
+    // ── top-10 cutoff logic ──
+    const finalStreak = score.streak;
+    const threshold   = await getThresholdScore(); // 0 if fewer than 10 scores
+
+    if (finalStreak > threshold) {
+      // compute average time for this just-ended streak
+      const sum = streakTimes.reduce((a,b)=>a+b, 0);
+      const avg = formatTime(sum / streakTimes.length);
+
+      const name = prompt(
+        `🎉 You made it into the Top 10 with a streak of ${finalStreak}!\n` +
+        `Your average time was ${avg}.\n` +
+        `Enter your name to record on the leaderboard:`
+      );
+      if (name) {
+        await saveStreak(name.trim(), finalStreak, avg);
       }
-      score.streak = 0;
-      streakTimes = [];
+    }
+
+    // reset the streak now that we’ve handled it
+    score.streak  = 0;
+    streakTimes   = [];
 
       document.querySelectorAll('.day-btn').forEach(b => {
         if (b.textContent === daysOrdered[currentDate.getDay()]) {
