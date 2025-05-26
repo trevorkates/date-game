@@ -144,3 +144,25 @@
     margin: 0 1em !important;
   }
 }
+
+/* 1) Make the modal‐content wider */
+#leaderboard-modal .modal-content {
+  max-width: 600px;       /* or whatever max you like—bigger than 10’s width */
+  width: 90%;             /* or a fixed px width like 600px */
+  box-sizing: border-box;
+}
+
+/* 2) Disable internal scrolling so all 10 show at once */
+#leaderboard-modal #leaderboard-list {
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;       /* remove any scrollbar padding */
+}
+
+/* 3) If you still have an overall max-height on the modal, lift it */
+#leaderboard-modal {
+  align-items: flex-start; /* let it grow downward */
+}
+#leaderboard-modal .modal-content {
+  max-height: none;
+}
