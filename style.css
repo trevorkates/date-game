@@ -147,8 +147,10 @@
 
 /* 1) Make the modal‐content wider */
 #leaderboard-modal .modal-content {
-  max-width: 600px;       /* or whatever max you like—bigger than 10’s width */
-  width: 90%;             /* or a fixed px width like 600px */
+  min-width: 600px;       /* or whatever max you like—bigger than 10’s width */
+  width: auto;
+  max-width: 90%;             /* or a fixed px width like 600px */
+  max-height: none;
   box-sizing: border-box;
 }
 
