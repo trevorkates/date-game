@@ -49,24 +49,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
   }
-  async function loadLeaderboardData() {
-    const snap = await streaksRef.orderBy('streak','desc').limit(10).get();
-    return snap.docs.map(doc => {
-      const d = doc.data();
-      let dateSet = '--';
-      if (d.timestamp?.toDate) {
-        dateSet = d.timestamp.toDate().toLocaleDateString('en-US',{
-          year:'numeric', month:'long', day:'numeric'
-        });
-      }
-      return {
-        name:    d.name,
-        streak:  d.streak,
-        avgTime: d.avgTime || '--:--.--',
-        dateSet
-      };
-    });
-  }
+  // Replace your existing loadLeaderboardData() with this:
+
+async function loadLeaderboardData() {
+  // 1) fetch all entries
+  const snap = await streaksRef.get();
+  const arr = snap.docs.map(doc => {
+    const d = doc.data();
+
+    // 2) parse avgTime "MM:SS.hh" into ms for numeric sort
+    let avgMs = Infinity;
+    if (d.avgTime && /^\d+:\d+\.\d+$/.test(d.avgTime)) {
+      const [mm, ss, hh] = d.avgTime.split(/[:\.]/).map(Number);
+      avgMs = mm*60000 + ss*1000 + hh*10;
+    }
+
+    // format date
+    let dateSet = '--';
+    if (d.timestamp?.toDate) {
+      dateSet = d.timestamp.toDate().toLocaleDateString('en-US',{
+        year:'numeric', month:'long', day:'numeric'
+      });
+    }
+
+    return {
+      name:    d.name,
+      streak:  d.streak,
+      avgTime: d.avgTime || '--:--.--',
+      avgMs,
+      dateSet
+    };
+  });
+
+  // 3) sort by streak descending, then avgMs ascending
+  arr.sort((a,b) => {
+    if (b.streak !== a.streak) return b.streak - a.streak;
+    return a.avgMs - b.avgMs;
+  });
+
+  // 4) take top 10
+  return arr.slice(0,10);
+}
 
     // Get the 10th-best streak (or 0 if there aren’t yet 10 entries)
   async function getThresholdScore() {
